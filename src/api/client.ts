@@ -49,3 +49,21 @@ export async function pairingFetch<T>(
     return { ok: false, status: 0, error: e.message ?? "Network error" };
   }
 }
+
+// Returns raw Response for streaming — caller is responsible for reading body
+export async function rawFetch(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response | null> {
+  const url = await getServerUrl();
+  const token = await getToken();
+  if (!url || !token) return null;
+  return fetch(`${url}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(options.headers ?? {}),
+    },
+  });
+}
