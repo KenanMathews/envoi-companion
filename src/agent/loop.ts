@@ -1,6 +1,8 @@
 import { apiFetch, rawFetch } from "../api/client";
 import type { ChatConfig, Message, ToolCall } from "./types";
 
+type AccToolCall = { id: string; type: string; function: { name: string; arguments: string } };
+
 const TOOLS = [
   {
     type: "function",
@@ -99,7 +101,7 @@ export async function fetchConfig(): Promise<ChatConfig | null> {
   return result.data;
 }
 
-type LoopOpts = {
+export type LoopOpts = {
   // OpenAI-format messages array — mutated in place with assistant + tool turns
   apiMessages: Array<{ role: string; content: string | null; tool_calls?: unknown[]; tool_call_id?: string }>;
   config: ChatConfig;
@@ -146,9 +148,9 @@ export async function runAgentLoop(opts: LoopOpts): Promise<void> {
 
     for (const tc of toolCalls) {
       let args: Record<string, unknown> = {};
-      try { args = JSON.parse((tc as any).function.arguments || "{}"); } catch {}
-      const name = (tc as any).function.name as string;
-      const id = (tc as any).id as string;
+      try { args = JSON.parse(tc.function.arguments || "{}"); } catch (e) { console.warn("Tool args parse error:", e); }
+      const name = tc.function.name;
+      const id = tc.id;
 
       onToolStart(id, name, args);
 
@@ -157,6 +159,7 @@ export async function runAgentLoop(opts: LoopOpts): Promise<void> {
         {
           method: "POST",
           body: JSON.stringify({ tool: name, args, cwd: config.project_root || "" }),
+          signal,
         }
       );
 
@@ -174,12 +177,12 @@ export async function runAgentLoop(opts: LoopOpts): Promise<void> {
 async function _readStream(
   body: ReadableStream<Uint8Array>,
   onChunk: (delta: string) => void
-): Promise<{ content: string; toolCalls: unknown[]; finishReason: string | null }> {
+): Promise<{ content: string; toolCalls: AccToolCall[]; finishReason: string | null }> {
   const reader = body.getReader();
   const dec = new TextDecoder();
   let buf = "";
   let content = "";
-  const acc: Record<number, { id: string; type: string; function: { name: string; arguments: string } }> = {};
+  const acc: Record<number, AccToolCall> = {};
   let finishReason: string | null = null;
 
   while (true) {
@@ -201,7 +204,7 @@ async function _readStream(
         if (delta?.content) { content += delta.content; onChunk(delta.content); }
         if (delta?.tool_calls) _accToolCalls(acc, delta.tool_calls);
         if (choice.finish_reason) finishReason = choice.finish_reason;
-      } catch {}
+      } catch (e) { console.warn("SSE parse error:", e); }
     }
   }
 
@@ -209,7 +212,7 @@ async function _readStream(
 }
 
 function _accToolCalls(
-  acc: Record<number, { id: string; type: string; function: { name: string; arguments: string } }>,
+  acc: Record<number, AccToolCall>,
   deltas: Array<{ index: number; id?: string; function?: { name?: string; arguments?: string } }>
 ) {
   for (const tc of deltas) {
