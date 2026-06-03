@@ -26,6 +26,12 @@ export default function WaitingScreen({ navigation, route }: Props) {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    // Register the scan with the server so it shows Allow/Deny in the browser
+    pairingFetch(serverUrl, "/auth/pair", {
+      method: "POST",
+      body: JSON.stringify({ session_id: sessionId, device_name: "Envoi Mobile" }),
+    });
+
     pollRef.current = setInterval(async () => {
       const result = await pairingFetch<StatusResponse>(
         serverUrl,
