@@ -31,7 +31,10 @@ export default function WaitingScreen({ navigation, route }: Props) {
     async function init() {
       // Step 1: ping the server to verify connectivity
       try {
-        const res = await fetch(`${serverUrl}/ping`, { signal: AbortSignal.timeout(5000) });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(`${serverUrl}/ping`, { signal: controller.signal });
+        clearTimeout(timeoutId);
         const d = await res.json();
         if (d.ok) {
           setPingStatus("ok");
