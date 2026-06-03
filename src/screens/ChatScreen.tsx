@@ -6,8 +6,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
+  FlatList,
 } from "react-native";
-import { FlashList } from "@shopify/flash-list";
 import { apiFetch } from "../api/client";
 import { fetchConfig, runAgentLoop } from "../agent/loop";
 import type { ChatConfig, Message, ToolCall } from "../agent/types";
@@ -181,13 +181,12 @@ export default function ChatScreen() {
             <Text style={styles.emptyHint}>What can I help you with?</Text>
           </View>
         ) : (
-          <FlashList
+          <FlatList
             data={reversedMessages}
             inverted
             renderItem={({ item }) => (
               <MessageBubble message={item} onToggleTool={handleToggleTool} />
             )}
-            estimatedItemSize={80}
             contentContainerStyle={styles.list}
             keyExtractor={(item) => item.id}
           />
