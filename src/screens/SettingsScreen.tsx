@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,11 @@ import {
   SafeAreaView,
   ScrollView,
   RefreshControl,
-  TextInput,
 } from "react-native";
 import { getServerUrl, clearCredentials } from "../store/auth";
 import { apiFetch } from "../api/client";
 import { C } from "../theme";
+import ModelPicker from "../components/ModelPicker";
 
 type ServerConfig = {
   model: string;
@@ -41,9 +41,7 @@ export default function SettingsScreen() {
   const [connected, setConnected] = useState<boolean | null>(null);
   const [config, setConfig] = useState<ServerConfig | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [editingModel, setEditingModel] = useState(false);
-  const [modelDraft, setModelDraft] = useState("");
-  const modelInputRef = useRef<TextInput>(null);
+  const [pickerVisible, setPickerVisible] = useState(false);
 
   const load = useCallback(async () => {
     const [urlResult, configResult] = await Promise.all([
@@ -54,7 +52,6 @@ export default function SettingsScreen() {
     if (configResult.ok) {
       setConnected(true);
       setConfig(configResult.data);
-      setModelDraft(configResult.data.model);
     } else {
       setConnected(false);
     }
@@ -71,19 +68,6 @@ export default function SettingsScreen() {
       method: "POST",
       body: JSON.stringify(patch),
     });
-  }
-
-  function handleModelEdit() {
-    setEditingModel(true);
-    setTimeout(() => modelInputRef.current?.focus(), 50);
-  }
-
-  function handleModelSave() {
-    setEditingModel(false);
-    const trimmed = modelDraft.trim();
-    if (trimmed && trimmed !== config?.model) {
-      saveConfig({ model: trimmed });
-    }
   }
 
   function handleTempChange(delta: number) {
@@ -159,28 +143,13 @@ export default function SettingsScreen() {
           <>
             <Text style={styles.sectionLabel}>MODEL</Text>
             <View style={styles.card}>
-              {/* Model — editable */}
-              <TouchableOpacity style={styles.row} onPress={handleModelEdit} activeOpacity={0.7}>
+              {/* Model — opens picker */}
+              <TouchableOpacity style={styles.row} onPress={() => setPickerVisible(true)} activeOpacity={0.7}>
                 <Text style={styles.rowLabel}>Model</Text>
-                {editingModel ? (
-                  <TextInput
-                    ref={modelInputRef}
-                    style={styles.modelInput}
-                    value={modelDraft}
-                    onChangeText={setModelDraft}
-                    onBlur={handleModelSave}
-                    onSubmitEditing={handleModelSave}
-                    returnKeyType="done"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    selectTextOnFocus
-                  />
-                ) : (
-                  <Text style={[styles.rowValue, { color: C.accent }]} numberOfLines={1}>
-                    {config.model || "—"}
-                  </Text>
-                )}
-                {!editingModel && <Text style={styles.editHint}>✎</Text>}
+                <Text style={[styles.rowValue, { color: C.accent }]} numberOfLines={1}>
+                  {config.model || "—"}
+                </Text>
+                <Text style={styles.editHint}>›</Text>
               </TouchableOpacity>
 
               <Divider />
@@ -248,6 +217,16 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <ModelPicker
+        visible={pickerVisible}
+        current={config?.model ?? ""}
+        onSelect={(model) => {
+          setPickerVisible(false);
+          saveConfig({ model });
+        }}
+        onClose={() => setPickerVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -283,14 +262,7 @@ const styles = StyleSheet.create({
   rowValue: { color: C.ink, fontSize: 14, flex: 1, textAlign: "right" },
   statusDot: { width: 7, height: 7, borderRadius: 4, flexShrink: 0 },
   divider: { height: 1, backgroundColor: C.line, marginHorizontal: 14 },
-  editHint: { color: C.faint, fontSize: 13 },
-  modelInput: {
-    flex: 1,
-    color: C.accent,
-    fontSize: 14,
-    textAlign: "right",
-    paddingVertical: 0,
-  },
+  editHint: { color: C.faint, fontSize: 16 },
   stepper: {
     flex: 1,
     flexDirection: "row",
