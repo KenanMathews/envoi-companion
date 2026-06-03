@@ -13,6 +13,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { apiFetch } from "../api/client";
+import { C } from "../theme";
 import type { MainTabParamList } from "../navigation/index";
 
 type Session = {
@@ -173,23 +174,23 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0f172a" },
+  safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#1e293b",
+    backgroundColor: C.panel,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#334155",
+    borderBottomColor: C.line,
   },
-  headerTitle: { color: "#e2e8f0", fontSize: 17, fontWeight: "700" },
+  headerTitle: { color: C.ink, fontSize: 17, fontWeight: "700" },
   headerCount: {
-    color: "#fbbf24",
+    color: C.accent,
     fontSize: 11,
     fontWeight: "700",
-    backgroundColor: "#fbbf2420",
+    backgroundColor: C.user,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
@@ -197,21 +198,21 @@ const styles = StyleSheet.create({
   },
   searchRow: { padding: 12, paddingBottom: 6 },
   search: {
-    backgroundColor: "#1e293b",
+    backgroundColor: C.panel,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: C.line,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 9,
-    color: "#e2e8f0",
+    color: C.ink,
     fontSize: 14,
   },
   listContent: { padding: 12, gap: 8 },
   card: {
-    backgroundColor: "#1e293b",
+    backgroundColor: C.panel,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: C.line,
     padding: 14,
     marginBottom: 8,
   },
@@ -221,15 +222,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 6,
   },
-  cardTitle: { color: "#e2e8f0", fontSize: 14, fontWeight: "600", flex: 1, marginRight: 8 },
-  chevron: { color: "#fbbf24", fontSize: 18 },
+  cardTitle: { color: C.ink, fontSize: 14, fontWeight: "600", flex: 1, marginRight: 8 },
+  chevron: { color: C.accent, fontSize: 18 },
   cardMeta: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },
-  metaText: { color: "#475569", fontSize: 11 },
-  metaModel: { color: "#94a3b8", fontSize: 11, fontFamily: "monospace", flex: 1 },
+  metaText: { color: C.faint, fontSize: 11 },
+  metaModel: { color: C.soft, fontSize: 11, fontFamily: "monospace", flex: 1 },
   emptyContainer: { flex: 1 },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", padding: 40, gap: 10 },
   emptyIcon: { fontSize: 36 },
-  emptyTitle: { color: "#e2e8f0", fontSize: 17, fontWeight: "700" },
-  emptyHint: { color: "#475569", fontSize: 13, textAlign: "center", lineHeight: 20 },
-  hint: { color: "#334155", fontSize: 10, textAlign: "center", paddingVertical: 8 },
+  emptyTitle: { color: C.ink, fontSize: 17, fontWeight: "700" },
+  emptyHint: { color: C.faint, fontSize: 13, textAlign: "center", lineHeight: 20 },
+  hint: { color: C.line, fontSize: 10, textAlign: "center", paddingVertical: 8 },
 });

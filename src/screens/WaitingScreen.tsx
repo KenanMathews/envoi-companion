@@ -10,6 +10,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ConnectStackParamList } from "../navigation/index";
 import { pairingFetch } from "../api/client";
 import { saveCredentials } from "../store/auth";
+import { C } from "../theme";
 
 type Props = NativeStackScreenProps<ConnectStackParamList, "Waiting">;
 
@@ -116,12 +117,12 @@ export default function WaitingScreen({ navigation, route }: Props) {
 
       {pingStatus === "ok" && (
         <>
-          <ActivityIndicator size="large" color="#fbbf24" style={{ marginBottom: 24 }} />
+          <ActivityIndicator size="large" color={C.accent} style={{ marginBottom: 24 }} />
           <Text style={styles.title}>Waiting for approval</Text>
           <Text style={styles.subtitle}>{message}</Text>
           <Text style={styles.hint}>
             Click{" "}
-            <Text style={{ color: "#fbbf24", fontWeight: "700" }}>Allow</Text>{" "}
+            <Text style={{ color: C.accent, fontWeight: "700" }}>Allow</Text>{" "}
             in your browser to connect
           </Text>
           <Text style={styles.countdown}>Expires in {expiresIn}s</Text>
@@ -140,7 +141,7 @@ export default function WaitingScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: C.bg,
     alignItems: "center",
     justifyContent: "center",
     padding: 32,
@@ -150,30 +151,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     marginBottom: 32,
-    backgroundColor: "#1e293b",
+    backgroundColor: C.panel,
     borderRadius: 8,
     padding: 10,
     width: "100%",
   },
   dot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
-  pingText: { color: "#94a3b8", fontSize: 11, flex: 1 },
+  pingText: { color: C.soft, fontSize: 11, flex: 1 },
   errorBox: {
-    backgroundColor: "#1e293b",
+    backgroundColor: C.panel,
     borderRadius: 10,
     padding: 20,
     width: "100%",
     alignItems: "center",
     gap: 8,
   },
-  errorTitle: { color: "#ef4444", fontSize: 16, fontWeight: "700" },
-  errorDetail: { color: "#94a3b8", fontSize: 12, textAlign: "center" },
-  errorHint: { color: "#475569", fontSize: 11, textAlign: "center", marginTop: 4 },
-  backBtn: { marginTop: 16, backgroundColor: "#fbbf24", borderRadius: 8, paddingVertical: 10, paddingHorizontal: 24 },
-  backBtnText: { color: "#000", fontWeight: "700" },
-  title: { color: "#e2e8f0", fontSize: 20, fontWeight: "700", marginBottom: 12 },
-  subtitle: { color: "#94a3b8", fontSize: 14, textAlign: "center", marginBottom: 8 },
-  hint: { color: "#64748b", fontSize: 13, textAlign: "center", marginBottom: 16 },
-  countdown: { color: "#475569", fontSize: 12 },
+  errorTitle: { color: C.danger, fontSize: 16, fontWeight: "700" },
+  errorDetail: { color: C.soft, fontSize: 12, textAlign: "center" },
+  errorHint: { color: C.faint, fontSize: 11, textAlign: "center", marginTop: 4 },
+  backBtn: { marginTop: 16, backgroundColor: C.accent, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 24 },
+  backBtnText: { color: C.bg, fontWeight: "700" },
+  title: { color: C.ink, fontSize: 20, fontWeight: "700", marginBottom: 12 },
+  subtitle: { color: C.soft, fontSize: 14, textAlign: "center", marginBottom: 8 },
+  hint: { color: C.faint, fontSize: 13, textAlign: "center", marginBottom: 16 },
+  countdown: { color: C.faint, fontSize: 12 },
   cancelBtn: { marginTop: 32 },
-  cancelText: { color: "#ef4444", fontSize: 14 },
+  cancelText: { color: C.danger, fontSize: 14 },
 });

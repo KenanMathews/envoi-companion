@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ConnectStackParamList } from "../navigation/index";
+import { C } from "../theme";
 
 type Props = NativeStackScreenProps<ConnectStackParamList, "Scan">;
 
@@ -64,20 +65,20 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
     borderWidth: 2,
-    borderColor: "#fbbf24",
+    borderColor: C.accent,
     borderRadius: 12,
     marginBottom: 24,
   },
-  hint: { color: "#e2e8f0", fontSize: 13, textAlign: "center", paddingHorizontal: 32 },
-  subtitle: { color: "#94a3b8", textAlign: "center", margin: 32, lineHeight: 22 },
+  hint: { color: C.ink, fontSize: 13, textAlign: "center", paddingHorizontal: 32 },
+  subtitle: { color: C.soft, textAlign: "center", margin: 32, lineHeight: 22 },
   button: {
-    backgroundColor: "#fbbf24",
+    backgroundColor: C.accent,
     borderRadius: 10,
     padding: 14,
     marginHorizontal: 32,
     width: "80%",
   },
-  buttonText: { color: "#000", fontWeight: "700", textAlign: "center" },
+  buttonText: { color: C.bg, fontWeight: "700", textAlign: "center" },
   backBtn: { position: "absolute", top: 60, left: 20, padding: 10 },
-  backText: { color: "#94a3b8", fontSize: 15 },
+  backText: { color: C.soft, fontSize: 15 },
 });

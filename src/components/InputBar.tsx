@@ -1,11 +1,6 @@
 import React, { useState } from "react";
-import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, TextInput, TouchableOpacity, Text, StyleSheet } from "react-native";
+import { C } from "../theme";
 
 type Props = {
   onSend: (text: string) => void;
@@ -31,7 +26,7 @@ export default function InputBar({ onSend, onStop, streaming, disabled }: Props)
         value={text}
         onChangeText={setText}
         placeholder="Message Envoi…"
-        placeholderTextColor="#475569"
+        placeholderTextColor={C.faint}
         multiline
         maxLength={4000}
         editable={!streaming}
@@ -64,24 +59,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: "#1e293b",
-    backgroundColor: "#0f172a",
+    borderTopColor: C.line,
+    backgroundColor: C.bg,
   },
   input: {
     flex: 1,
-    backgroundColor: "#1e293b",
+    backgroundColor: C.panel,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: C.line,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    color: "#e2e8f0",
+    color: C.ink,
     fontSize: 14,
     maxHeight: 120,
     lineHeight: 20,
   },
   sendBtn: {
-    backgroundColor: "#fbbf24",
+    backgroundColor: C.accent,
     borderRadius: 50,
     width: 36,
     height: 36,
@@ -89,10 +84,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
-  sendBtnDisabled: { backgroundColor: "#334155" },
-  sendIcon: { color: "#000", fontWeight: "700", fontSize: 16 },
+  sendBtnDisabled: { backgroundColor: C.line },
+  sendIcon: { color: C.bg, fontWeight: "700", fontSize: 16 },
   stopBtn: {
-    backgroundColor: "#ef4444",
+    backgroundColor: C.danger,
     borderRadius: 50,
     width: 36,
     height: 36,
@@ -100,5 +95,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
-  stopIcon: { color: "#fff", fontSize: 12 },
+  stopIcon: { color: C.ink, fontSize: 12 },
 });

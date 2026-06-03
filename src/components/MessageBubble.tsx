@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { View, Text, Animated, StyleSheet } from "react-native";
 import type { Message, ToolCall } from "../agent/types";
 import ToolCallPill from "./ToolCallPill";
+import { C } from "../theme";
 
 type Props = {
   message: Message;
@@ -40,12 +41,9 @@ export default function MessageBubble({ message, onToggleTool }: Props) {
 
   return (
     <View style={styles.assistantRow}>
-      {/* Tool call pills rendered above the text */}
       {message.toolCalls?.map((tc: ToolCall) => (
         <ToolCallPill key={tc.id} toolCall={tc} onToggle={onToggleTool} />
       ))}
-
-      {/* Assistant text bubble — only render if there's content */}
       {(message.content.length > 0 || message.streaming) && (
         <View style={styles.assistantBubble}>
           <Text style={styles.assistantText}>
@@ -62,18 +60,18 @@ const styles = StyleSheet.create({
   userRow: { alignItems: "flex-end", marginBottom: 8 },
   assistantRow: { alignItems: "flex-start", marginBottom: 8, gap: 6 },
   userBubble: {
-    backgroundColor: "rgba(251,191,36,0.15)",
+    backgroundColor: C.user,
     borderWidth: 1,
-    borderColor: "rgba(251,191,36,0.3)",
+    borderColor: C.line,
     borderRadius: 14,
     borderBottomRightRadius: 2,
     paddingVertical: 8,
     paddingHorizontal: 12,
     maxWidth: "80%",
   },
-  userText: { color: "#e2e8f0", fontSize: 14, lineHeight: 20 },
+  userText: { color: C.ink, fontSize: 14, lineHeight: 20 },
   assistantBubble: {
-    backgroundColor: "#1e293b",
+    backgroundColor: C.panel,
     borderRadius: 2,
     borderTopRightRadius: 14,
     borderBottomRightRadius: 14,
@@ -82,6 +80,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     maxWidth: "88%",
   },
-  assistantText: { color: "#cbd5e1", fontSize: 14, lineHeight: 20 },
-  cursor: { color: "#fbbf24", fontWeight: "700" },
+  assistantText: { color: C.soft, fontSize: 14, lineHeight: 20 },
+  cursor: { color: C.accent, fontWeight: "700" },
 });

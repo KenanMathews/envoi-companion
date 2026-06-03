@@ -9,6 +9,7 @@ import {
   FlatList,
 } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
+import { C } from "../theme";
 import { apiFetch } from "../api/client";
 import { fetchConfig, runAgentLoop } from "../agent/loop";
 import type { ChatConfig, Message, ToolCall } from "../agent/types";
@@ -230,7 +231,7 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0f172a" },
+  safe: { flex: 1, backgroundColor: C.bg },
   flex: { flex: 1 },
   header: {
     flexDirection: "row",
@@ -239,19 +240,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
-    backgroundColor: "#1e293b",
+    borderBottomColor: C.line,
+    backgroundColor: C.panel,
   },
-  model: { color: "#94a3b8", fontSize: 12 },
-  newBtn: { color: "#fbbf24", fontSize: 12 },
-  empty: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  emptyIcon: { fontSize: 32, color: "#334155" },
-  emptyTitle: { color: "#e2e8f0", fontSize: 18, fontWeight: "700" },
-  emptyHint: { color: "#475569", fontSize: 13 },
+  model: { color: C.soft, fontSize: 12 },
+  newBtn: { color: C.accent, fontSize: 12 },
+  empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10 },
+  emptyIcon: { fontSize: 32, color: C.line },
+  emptyTitle: { color: C.ink, fontSize: 18, fontWeight: "700" },
+  emptyHint: { color: C.faint, fontSize: 13 },
   list: { paddingHorizontal: 12, paddingVertical: 12 },
 });
