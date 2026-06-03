@@ -20,6 +20,12 @@ export type ConnectStackParamList = {
   Connected: undefined;
 };
 
+export type MainTabParamList = {
+  Chat: { sessionId: string } | undefined;
+  History: undefined;
+  Settings: undefined;
+};
+
 const ConnectStack = createNativeStackNavigator<ConnectStackParamList>();
 const Tab = createBottomTabNavigator();
 

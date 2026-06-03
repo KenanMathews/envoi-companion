@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,16 +8,21 @@ import {
   SafeAreaView,
   FlatList,
 } from "react-native";
+import { useRoute, RouteProp } from "@react-navigation/native";
 import { apiFetch } from "../api/client";
 import { fetchConfig, runAgentLoop } from "../agent/loop";
 import type { ChatConfig, Message, ToolCall } from "../agent/types";
 import MessageBubble from "../components/MessageBubble";
 import InputBar from "../components/InputBar";
+import type { MainTabParamList } from "../navigation/index";
 
 let _msgId = 0;
 const nextId = () => String(++_msgId);
 
+type ChatRoute = RouteProp<MainTabParamList, "Chat">;
+
 export default function ChatScreen() {
+  const route = useRoute<ChatRoute>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -26,9 +31,30 @@ export default function ChatScreen() {
   const responseRef = useRef<string>("");
 
   // Load config once
-  React.useEffect(() => {
+  useEffect(() => {
     fetchConfig().then((c) => { if (c) setConfig(c); });
   }, []);
+
+  // Load session when navigated from History
+  useEffect(() => {
+    const incomingId = route.params?.sessionId;
+    if (!incomingId || incomingId === sessionId) return;
+    abortRef.current?.abort();
+    setStreaming(false);
+    setSessionId(incomingId);
+    setMessages([]);
+    apiFetch<Array<{ role: string; content: string }>>(`/sessions/${incomingId}`).then((res) => {
+      if (!res.ok) return;
+      const loaded: Message[] = res.data
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .map((m) => ({
+          id: nextId(),
+          role: m.role as "user" | "assistant",
+          content: m.content ?? "",
+        }));
+      setMessages(loaded);
+    });
+  }, [route.params?.sessionId]);
 
   const handleToggleTool = useCallback((toolId: string) => {
     setMessages((prev) =>
