@@ -1,5 +1,6 @@
-import { apiFetch, rawFetch } from "../api/client";
-import type { ChatConfig, Message, ToolCall } from "./types";
+import { apiFetch } from "../api/client";
+import { getServerUrl, getToken } from "../store/auth";
+import type { ChatConfig } from "./types";
 
 type AccToolCall = { id: string; type: string; function: { name: string; arguments: string } };
 
@@ -124,19 +125,7 @@ export async function runAgentLoop(opts: LoopOpts): Promise<void> {
       tool_choice: "auto",
     };
 
-    const resp = await rawFetch("/v1/chat/completions", {
-      method: "POST",
-      headers: { "X-Upstream": config.base_url },
-      body: JSON.stringify(payload),
-      signal,
-    });
-
-    if (!resp || !resp.ok) {
-      const text = resp ? await resp.text() : "No response";
-      throw new Error(`HTTP ${resp?.status ?? 0}: ${text.slice(0, 200)}`);
-    }
-
-    const { content, toolCalls, finishReason } = await _readStream(resp.body!, onChunk);
+    const { content, toolCalls, finishReason } = await _streamXHR(config, payload, onChunk, signal);
 
     apiMessages.push({
       role: "assistant",
@@ -174,41 +163,71 @@ export async function runAgentLoop(opts: LoopOpts): Promise<void> {
   }
 }
 
-async function _readStream(
-  body: ReadableStream<Uint8Array>,
-  onChunk: (delta: string) => void
+async function _streamXHR(
+  config: ChatConfig,
+  payload: unknown,
+  onChunk: (delta: string) => void,
+  signal: AbortSignal
 ): Promise<{ content: string; toolCalls: AccToolCall[]; finishReason: string | null }> {
-  const reader = body.getReader();
-  const dec = new TextDecoder();
-  let buf = "";
-  let content = "";
-  const acc: Record<number, AccToolCall> = {};
-  let finishReason: string | null = null;
+  const serverUrl = await getServerUrl();
+  const token = await getToken();
+  if (!serverUrl || !token) throw new Error("Not paired");
 
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    const lines = buf.split("\n");
-    buf = lines.pop() ?? "";
-    for (const line of lines) {
-      const t = line.trim();
-      if (!t.startsWith("data:")) continue;
-      const d = t.slice(5).trim();
-      if (d === "[DONE]") continue;
-      try {
-        const j = JSON.parse(d);
-        const choice = j.choices?.[0];
-        if (!choice) continue;
-        const delta = choice.delta;
-        if (delta?.content) { content += delta.content; onChunk(delta.content); }
-        if (delta?.tool_calls) _accToolCalls(acc, delta.tool_calls);
-        if (choice.finish_reason) finishReason = choice.finish_reason;
-      } catch (e) { console.warn("SSE parse error:", e); }
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${serverUrl}/v1/chat/completions`, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.setRequestHeader("X-Upstream", config.base_url);
+
+    let buf = "";
+    let content = "";
+    const acc: Record<number, AccToolCall> = {};
+    let finishReason: string | null = null;
+    let offset = 0;
+
+    function parseChunk() {
+      const newText = xhr.responseText.slice(offset);
+      offset = xhr.responseText.length;
+      buf += newText;
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t.startsWith("data:")) continue;
+        const d = t.slice(5).trim();
+        if (d === "[DONE]") continue;
+        try {
+          const j = JSON.parse(d);
+          const choice = j.choices?.[0];
+          if (!choice) continue;
+          const delta = choice.delta;
+          if (delta?.content) { content += delta.content; onChunk(delta.content); }
+          if (delta?.tool_calls) _accToolCalls(acc, delta.tool_calls);
+          if (choice.finish_reason) finishReason = choice.finish_reason;
+        } catch (e) { console.warn("SSE parse error:", e); }
+      }
     }
-  }
 
-  return { content, toolCalls: Object.values(acc), finishReason };
+    signal.addEventListener("abort", () => {
+      xhr.abort();
+      reject(new DOMException("Aborted", "AbortError"));
+    });
+
+    xhr.onprogress = parseChunk;
+    xhr.onload = () => {
+      parseChunk(); // flush any remaining buffer
+      if (xhr.status >= 400) {
+        reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText.slice(0, 200)}`));
+      } else {
+        resolve({ content, toolCalls: Object.values(acc), finishReason });
+      }
+    };
+    xhr.onerror = () => reject(new Error(`Network error (XHR)`));
+    xhr.onabort = () => reject(new DOMException("Aborted", "AbortError"));
+
+    xhr.send(JSON.stringify(payload));
+  });
 }
 
 function _accToolCalls(
