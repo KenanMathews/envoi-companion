@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ export default function ChatScreen() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [config, setConfig] = useState<ChatConfig | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const responseRef = useRef<string>("");
 
   // Load config once
   React.useEffect(() => {
@@ -40,7 +41,7 @@ export default function ChatScreen() {
     );
   }, []);
 
-  async function handleSend(text: string) {
+  const handleSend = useCallback(async (text: string) => {
     if (!config) return;
 
     const userMsg: Message = { id: nextId(), role: "user", content: text };
@@ -80,6 +81,7 @@ export default function ChatScreen() {
         config,
         signal: abortController.signal,
         onChunk: (delta) => {
+          responseRef.current += delta;
           setMessages((prev) => {
             const last = prev[prev.length - 1];
             if (!last || last.role !== "assistant") return prev;
@@ -129,18 +131,20 @@ export default function ChatScreen() {
       setStreaming(false);
     }
 
-    // Persist turn to server
+    // Persist full turn to server
     if (sid) {
-      const savedMessages = [...messages, userMsg].map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      const savedMessages = [
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        { role: "user", content: text },
+        ...(responseRef.current ? [{ role: "assistant", content: responseRef.current }] : []),
+      ];
+      responseRef.current = "";
       await apiFetch(`/sessions/${sid}/messages`, {
         method: "POST",
         body: JSON.stringify({ messages: savedMessages }),
       });
     }
-  }
+  }, [config, messages, sessionId]);
 
   function handleStop() {
     abortRef.current?.abort();
@@ -154,6 +158,7 @@ export default function ChatScreen() {
   }
 
   const isEmpty = messages.length === 0;
+  const reversedMessages = useMemo(() => [...messages].reverse(), [messages]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -177,7 +182,7 @@ export default function ChatScreen() {
           </View>
         ) : (
           <FlashList
-            data={[...messages].reverse()}
+            data={reversedMessages}
             inverted
             renderItem={({ item }) => (
               <MessageBubble message={item} onToggleTool={handleToggleTool} />
