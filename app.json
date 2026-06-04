@@ -10,7 +10,6 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSLocalNetworkUsageDescription": "Envoi needs local network access to connect to your server.",
-        "NSSpeechRecognitionUsageDescription": "Envoi uses speech recognition to transcribe your voice messages.",
         "NSMicrophoneUsageDescription": "Envoi needs the microphone to record your voice messages."
       }
     },
@@ -27,7 +26,6 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-speech-recognition",
       "expo-secure-store",
       "expo-asset",
       "expo-font"

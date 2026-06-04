@@ -1,21 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ExpoSpeechRecognitionModule,
-  useSpeechRecognitionEvent,
-} from "expo-speech-recognition";
+import { Audio } from "expo-av";
+import { getServerUrl, getToken } from "../store/auth";
 
 export type VoiceInputState = {
   isRecording: boolean;
   transcript: string;
   error: string | null;
   startRecording: () => Promise<void>;
-  stopRecording: () => void;
+  stopRecording: () => Promise<void>;
 };
 
 export function useVoiceInput(): VoiceInputState {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const recordingRef = useRef<Audio.Recording | null>(null);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function scheduleErrorClear() {
@@ -23,50 +22,81 @@ export function useVoiceInput(): VoiceInputState {
     errorTimerRef.current = setTimeout(() => setError(null), 2000);
   }
 
-  useSpeechRecognitionEvent("result", (event) => {
-    const text = event.results[0]?.transcript ?? "";
-    setTranscript(text);
-  });
-
-  useSpeechRecognitionEvent("error", (event) => {
-    setIsRecording(false);
-    const msg =
-      event.error === "no-speech"
-        ? "No speech detected"
-        : event.error === "not-allowed"
-        ? "Microphone access denied"
-        : "Speech recognition unavailable";
-    setError(msg);
-    scheduleErrorClear();
-  });
-
-  useSpeechRecognitionEvent("end", () => {
-    setIsRecording(false);
-  });
-
   const startRecording = useCallback(async () => {
-    if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
-    const { status } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-    if (status !== "granted") {
-      setError("Microphone access denied");
+    try {
+      const { granted } = await Audio.requestPermissionsAsync();
+      if (!granted) {
+        setError("Microphone access denied");
+        scheduleErrorClear();
+        return;
+      }
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      recordingRef.current = recording;
+      setTranscript("");
+      setError(null);
+      setIsRecording(true);
+    } catch {
+      setError("Failed to start recording");
       scheduleErrorClear();
-      return;
     }
-    setTranscript("");
-    setError(null);
-    setIsRecording(true);
-    ExpoSpeechRecognitionModule.start({ lang: "en-US", interimResults: true });
   }, []);
 
-  const stopRecording = useCallback(() => {
-    ExpoSpeechRecognitionModule.stop();
-    // isRecording will be set to false by the "end" event
+  const stopRecording = useCallback(async () => {
+    const recording = recordingRef.current;
+    if (!recording) return;
+    recordingRef.current = null;
+
+    try {
+      await recording.stopAndUnloadAsync();
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      const uri = recording.getURI();
+
+      if (!uri) {
+        setIsRecording(false);
+        setError("No audio captured");
+        scheduleErrorClear();
+        return;
+      }
+
+      // Upload to Envoi server for transcription (isRecording stays true = waveform shows while uploading)
+      const serverUrl = await getServerUrl();
+      const token = await getToken();
+      if (!serverUrl || !token) {
+        setIsRecording(false);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", { uri, name: "audio.m4a", type: "audio/m4a" } as any);
+
+      const res = await fetch(`${serverUrl}/transcribe`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.text?.trim()) {
+        setTranscript(data.text.trim());
+      } else {
+        setError(data.error ?? "No speech detected");
+        scheduleErrorClear();
+      }
+    } catch {
+      setError("Transcription failed");
+      scheduleErrorClear();
+    } finally {
+      setIsRecording(false);
+    }
   }, []);
 
   useEffect(() => {
     return () => {
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
-      try { ExpoSpeechRecognitionModule.abort(); } catch {}
+      recordingRef.current?.stopAndUnloadAsync().catch(() => {});
     };
   }, []);
 
