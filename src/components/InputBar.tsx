@@ -28,7 +28,7 @@ export default function InputBar({ onSend, onStop, streaming, disabled }: Props)
     Array.from({ length: BAR_COUNT }, () => new Animated.Value(1))
   ).current;
 
-  const { isRecording, transcript, error, startRecording, stopRecording } =
+  const { isRecording, transcript, error, voiceEnabled, startRecording, stopRecording } =
     useVoiceInput();
 
   // When recognition finishes and transcript is ready, fill text input
@@ -101,18 +101,20 @@ export default function InputBar({ onSend, onStop, streaming, disabled }: Props)
 
   return (
     <View style={styles.container}>
-      {/* Mic button — hold to record */}
-      <TouchableOpacity
-        style={[styles.micBtn, { backgroundColor: micBg, borderColor: micBorderColor }]}
-        onPressIn={micDisabled ? undefined : startRecording}
-        onPressOut={micDisabled ? undefined : stopRecording}
-        disabled={micDisabled}
-        activeOpacity={0.8}
-      >
-        <Text style={[styles.micIcon, micDisabled && styles.micIconDisabled]}>
-          🎙
-        </Text>
-      </TouchableOpacity>
+      {/* Mic button — only shown when voice is enabled in settings */}
+      {voiceEnabled && (
+        <TouchableOpacity
+          style={[styles.micBtn, { backgroundColor: micBg, borderColor: micBorderColor }]}
+          onPressIn={micDisabled ? undefined : startRecording}
+          onPressOut={micDisabled ? undefined : stopRecording}
+          disabled={micDisabled}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.micIcon, micDisabled && styles.micIconDisabled]}>
+            🎙
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Center: waveform while recording, text input otherwise */}
       {isRecording ? (

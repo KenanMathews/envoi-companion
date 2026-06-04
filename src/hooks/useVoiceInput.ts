@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Audio } from "expo-av";
+import * as FileSystem from "expo-file-system";
 import { getServerUrl, getToken } from "../store/auth";
+import { apiFetch } from "../api/client";
 
 export type VoiceInputState = {
   isRecording: boolean;
   transcript: string;
   error: string | null;
+  voiceEnabled: boolean;
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<void>;
 };
@@ -14,8 +17,16 @@ export function useVoiceInput(): VoiceInputState {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const recordingRef = useRef<Audio.Recording | null>(null);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Check voice_enabled from server config on mount
+  useEffect(() => {
+    apiFetch<{ voice_enabled: boolean }>("/config").then((r) => {
+      if (r.ok) setVoiceEnabled(!!r.data.voice_enabled);
+    });
+  }, []);
 
   function scheduleErrorClear() {
     if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
@@ -23,6 +34,11 @@ export function useVoiceInput(): VoiceInputState {
   }
 
   const startRecording = useCallback(async () => {
+    if (!voiceEnabled) {
+      setError("Enable voice in Settings");
+      scheduleErrorClear();
+      return;
+    }
     try {
       const { granted } = await Audio.requestPermissionsAsync();
       if (!granted) {
@@ -32,7 +48,7 @@ export function useVoiceInput(): VoiceInputState {
       }
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
       const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
+        Audio.RecordingOptionsPresets.MEDIUM_QUALITY
       );
       recordingRef.current = recording;
       setTranscript("");
@@ -42,7 +58,7 @@ export function useVoiceInput(): VoiceInputState {
       setError("Failed to start recording");
       scheduleErrorClear();
     }
-  }, []);
+  }, [voiceEnabled]);
 
   const stopRecording = useCallback(async () => {
     const recording = recordingRef.current;
@@ -61,7 +77,12 @@ export function useVoiceInput(): VoiceInputState {
         return;
       }
 
-      // Upload to Envoi server for transcription (isRecording stays true = waveform shows while uploading)
+      // Read audio file as base64
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Send to Envoi server as JSON
       const serverUrl = await getServerUrl();
       const token = await getToken();
       if (!serverUrl || !token) {
@@ -69,18 +90,20 @@ export function useVoiceInput(): VoiceInputState {
         return;
       }
 
-      const formData = new FormData();
-      formData.append("file", { uri, name: "audio.m4a", type: "audio/m4a" } as any);
-      formData.append("model", "whisper-1");
-
       const res = await fetch(`${serverUrl}/transcribe`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ audio: base64, format: "m4a" }),
       });
 
       const data = await res.json();
-      if (data.text?.trim()) {
+      if (data.error === "voice_disabled") {
+        setError("Enable voice in Settings");
+        scheduleErrorClear();
+      } else if (data.text?.trim()) {
         setTranscript(data.text.trim());
       } else {
         setError(data.error ?? "No speech detected");
@@ -101,5 +124,5 @@ export function useVoiceInput(): VoiceInputState {
     };
   }, []);
 
-  return { isRecording, transcript, error, startRecording, stopRecording };
+  return { isRecording, transcript, error, voiceEnabled, startRecording, stopRecording };
 }
