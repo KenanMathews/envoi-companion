@@ -71,6 +71,7 @@ export function useVoiceInput(): VoiceInputState {
 
       const formData = new FormData();
       formData.append("file", { uri, name: "audio.m4a", type: "audio/m4a" } as any);
+      formData.append("model", "whisper-1");
 
       const res = await fetch(`${serverUrl}/transcribe`, {
         method: "POST",
