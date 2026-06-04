@@ -99,7 +99,10 @@ export function useVoiceInput(): VoiceInputState {
         body: JSON.stringify({ audio: base64, format: "m4a" }),
       });
 
-      const data = await res.json();
+      const rawText = await res.text();
+      console.log("[transcribe] status:", res.status, "body:", rawText.slice(0, 300));
+      let data: any = {};
+      try { data = JSON.parse(rawText); } catch { data = { error: `Non-JSON response: ${rawText.slice(0, 100)}` }; }
       if (data.error === "voice_disabled") {
         setError("Enable voice in Settings");
         scheduleErrorClear();
