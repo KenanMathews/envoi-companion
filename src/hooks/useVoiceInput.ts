@@ -66,11 +66,9 @@ export function useVoiceInput(): VoiceInputState {
     recordingRef.current = null;
 
     try {
-      console.log("[voice] stopping recording...");
       await recording.stopAndUnloadAsync();
       await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
       const uri = recording.getURI();
-      console.log("[voice] uri:", uri);
 
       if (!uri) {
         setIsRecording(false);
@@ -79,12 +77,9 @@ export function useVoiceInput(): VoiceInputState {
         return;
       }
 
-      // Read audio file as base64
-      console.log("[voice] reading base64...");
       const base64 = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
-      console.log("[voice] base64 length:", base64.length);
 
       // Send to Envoi server as JSON
       const serverUrl = await getServerUrl();
@@ -104,9 +99,8 @@ export function useVoiceInput(): VoiceInputState {
       });
 
       const rawText = await res.text();
-      console.log("[transcribe] status:", res.status, "body:", rawText.slice(0, 300));
       let data: any = {};
-      try { data = JSON.parse(rawText); } catch { data = { error: `Non-JSON response: ${rawText.slice(0, 100)}` }; }
+      try { data = JSON.parse(rawText); } catch { data = { error: `Server error: ${rawText.slice(0, 100)}` }; }
       if (data.error === "voice_disabled") {
         setError("Enable voice in Settings");
         scheduleErrorClear();
