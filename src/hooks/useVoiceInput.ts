@@ -66,9 +66,11 @@ export function useVoiceInput(): VoiceInputState {
     recordingRef.current = null;
 
     try {
+      console.log("[voice] stopping recording...");
       await recording.stopAndUnloadAsync();
       await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
       const uri = recording.getURI();
+      console.log("[voice] uri:", uri);
 
       if (!uri) {
         setIsRecording(false);
@@ -78,9 +80,11 @@ export function useVoiceInput(): VoiceInputState {
       }
 
       // Read audio file as base64
+      console.log("[voice] reading base64...");
       const base64 = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
+      console.log("[voice] base64 length:", base64.length);
 
       // Send to Envoi server as JSON
       const serverUrl = await getServerUrl();
